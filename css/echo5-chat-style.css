@@ -1,0 +1,203 @@
+:root {
+    --echo5-chat-primary-color: #0073aa; /* Default will be overridden by inline style */
+    --echo5-chat-secondary-color: #e5e5e5; /* Default will be overridden by inline style */
+    --echo5-chat-primary-color-darker: #005a87; /* Default, can also be overridden or calculated */
+}
+
+#echo5-chat-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 350px;
+    max-height: 500px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    border-radius: 5px;
+    overflow: hidden;
+    z-index: 9999; 
+}
+
+#echo5-chat-header {
+    background-color: var(--echo5-chat-primary-color); 
+    color: white;
+    padding: 10px;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+}
+#echo5-chat-header h2 {
+    margin: 0;
+    font-size: 1.2em;
+}
+
+#echo5-chat-messages {
+    flex-grow: 1;
+    padding: 10px;
+    overflow-y: auto;
+    min-height: 200px; 
+    background-color: #f9f9f9;
+}
+
+.echo5-message {
+    margin-bottom: 15px; 
+    padding: 8px 12px;
+    border-radius: 15px;
+    max-width: 80%;
+    line-height: 1.4;
+    display: flex; 
+    align-items: flex-end; 
+}
+
+.echo5-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    margin-right: 8px;
+    margin-left: 8px;
+    border: 1px solid #ddd;
+    background-color: #ccc; 
+}
+
+.echo5-user-message {
+    background-color: var(--echo5-chat-primary-color); 
+    color: white;
+    margin-left: auto;
+    border-bottom-right-radius: 5px;
+    flex-direction: row-reverse; 
+}
+.echo5-user-message .echo5-avatar {
+    margin-left: 8px;
+    margin-right: 0; 
+}
+
+
+.echo5-bot-message {
+    background-color: var(--echo5-chat-secondary-color); 
+    color: #333;
+    margin-right: auto;
+    border-bottom-left-radius: 5px;
+    flex-direction: row; 
+}
+.echo5-bot-message .echo5-avatar {
+    margin-right: 8px;
+    margin-left: 0; 
+}
+
+.echo5-message-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.echo5-message p {
+    margin: 0;
+}
+
+.echo5-message strong { 
+    font-weight: bold;
+    font-size: 0.9em; 
+    margin-bottom: 2px; 
+}
+
+#echo5-chat-input-area {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+    background-color: #fff;
+}
+
+#echo5-chat-message-input {
+    flex-grow: 1;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    margin-right: 5px;
+}
+
+#echo5-send-message-button {
+    padding: 8px 15px;
+    background-color: var(--echo5-chat-primary-color); 
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+#echo5-send-message-button:hover {
+    background-color: var(--echo5-chat-primary-color-darker); 
+}
+#echo5-send-message-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+
+#echo5-chat-name-prompt {
+    border-top: 1px solid #ddd; 
+}
+#echo5-user-name-input {
+     margin-bottom: 5px;
+     padding: 8px;
+     border: 1px solid #ccc;
+     border-radius: 3px;
+     width: calc(100% - 20px); 
+     display: block;
+     margin-left: auto;
+     margin-right: auto;
+}
+#echo5-submit-name-button {
+    padding: 8px 15px;
+    background-color: var(--echo5-chat-primary-color);
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+#echo5-submit-name-button:hover {
+    background-color: var(--echo5-chat-primary-color-darker);
+}
+
+/* Simple scrollbar for webkit browsers */
+#echo5-chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+#echo5-chat-messages::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+#echo5-chat-messages::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+#echo5-chat-messages::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 480px) {
+    #echo5-chat-container {
+        width: 100%;
+        max-width: 100%; /* Override previous width */
+        bottom: 0;
+        right: 0;
+        border-radius: 0; /* Optional: full width might look better without border radius */
+        height: 70vh; /* Optional: Adjust height for mobile */
+        max-height: 100%; /* Override previous max-height */
+    }
+
+    #echo5-chat-messages {
+        min-height: calc(70vh - 120px); /* Adjust based on header/input area height. Assuming header ~50px, input ~70px */
+    }
+
+    .echo5-message {
+        max-width: 90%; /* Allow messages to be a bit wider on small screens */
+    }
+
+    #echo5-chat-header h2 {
+        font-size: 1.1em; /* Slightly smaller header text on mobile */
+    }
+
+    #echo5-end-chat-button {
+        padding: 2px 6px; /* Smaller button padding */
+        font-size: 0.8em;
+    }
+}
