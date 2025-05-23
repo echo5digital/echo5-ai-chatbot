@@ -1,11 +1,11 @@
 <?php
 /**
- * Plugin Name: Echo5 AI Chatbot
- * Plugin URI:  https://example.com/echo5-ai-chatbot
+  * Plugin Name: Echo5 AI Chatbot
+ * Plugin URI:  https://echo5digital/echo5-ai-chatbot
  * Description: An AI-powered chatbot for WordPress.
- * Version:     0.1.1
- * Author:      Your Name
- * Author URI:  https://example.com
+ * Version:     1.0.0
+ * Author:      Echo5Digital
+ * Author URI:  https://echo5digitsl.com
  * License:     GPL-2.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: echo5-ai-chatbot
