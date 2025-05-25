@@ -243,91 +243,73 @@ add_action( 'wp_ajax_nopriv_echo5_send_chat_transcript', 'echo5_chatbot_ajax_sen
  * @return array|WP_Error An array with the AI's reply on success, or a WP_Error object on failure.
  */
 function echo5_chatbot_get_openai_response( $user_message, $user_name, $api_key ) {
-	error_log('Echo5 AI Chatbot: Preparing request to OpenAI with message: ' . $user_message); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-	$api_url = 'https://api.openai.com/v1/chat/completions';
-	$model   = 'gpt-3.5-turbo'; // Or another suitable model
+	error_log('Echo5 AI Chatbot: Starting OpenAI request process');
+	
+	if (empty($api_key)) {
+		error_log('Echo5 AI Chatbot: API key is empty!');
+		return new WP_Error('no_api_key', __('API key is not configured.', 'echo5-ai-chatbot'));
+	}
 
+	$api_url = 'https://api.openai.com/v1/chat/completions';
+	
 	$headers = array(
 		'Authorization' => 'Bearer ' . $api_key,
-		'Content-Type'  => 'application/json',
+		'Content-Type' => 'application/json'
 	);
 
-	$body = wp_json_encode(
-		array(
-			'model'    => $model,
-			'messages' => array(
-				array(
-					'role'    => 'system',
-					'content' => 'You are a helpful WordPress chatbot assistant named Echo.',
-				), // System prompt.
-				array(
-					'role'    => 'user',
-					'content' => $user_message,
-				),
+	$body = array(
+		'model' => 'gpt-3.5-turbo',
+		'messages' => array(
+			array(
+				'role' => 'system',
+				'content' => 'You are Echo, a helpful WordPress chatbot assistant. Keep responses concise and friendly.'
 			),
-			'max_tokens' => 150, // Optional: control response length.
-		)
-	);
-	error_log('Echo5 AI Chatbot: OpenAI Request Model: ' . $model); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-
-	$args = array(
-		'body'    => $body,
-		'headers' => $headers,
-		'timeout' => 30, // seconds.
-	);
-
-	// Log the request details (optional, for debugging).
-	// error_log( 'OpenAI Request Args: ' . print_r( $args, true ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_print_r
-
-	$response = wp_remote_post( $api_url, $args );
-
-	if ( is_wp_error( $response ) ) {
-		// Log the error.
-		error_log( 'OpenAI Request Failed: ' . $response->get_error_message() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-		return new WP_Error(
-			'openai_request_failed',
-			esc_html__( 'Unable to connect to OpenAI.', 'echo5-ai-chatbot' ),
-			array( 'details' => $response->get_error_message() )
-		);
-	}
-
-	$response_code = wp_remote_retrieve_response_code( $response );
-	$response_body = wp_remote_retrieve_body( $response );
-	error_log('Echo5 AI Chatbot: OpenAI Raw Response Code: ' . $response_code); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-	error_log('Echo5 AI Chatbot: OpenAI Raw Response Body (first 100 chars): ' . substr($response_body, 0, 100)); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-	$response_data = json_decode( $response_body, true );
-
-	// Log the response details (optional, for debugging).
-	// error_log( 'OpenAI Response Code: ' . $response_code ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-	// error_log( 'OpenAI Response Body: ' . print_r( $response_body, true ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_print_r
-
-	if ( $response_code !== 200 ) {
-		$error_message = isset( $response_data['error']['message'] ) ? $response_data['error']['message'] : $response_body;
-		// Log the API error.
-		error_log( "OpenAI API Error ($response_code): " . $error_message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-		return new WP_Error(
-			'openai_api_error',
-			sprintf(
-				/* translators: 1: HTTP response code, 2: Error message from API */
-				esc_html__( 'OpenAI API Error (%1$d): %2$s', 'echo5-ai-chatbot' ),
-				$response_code,
-				esc_html( $error_message )
+			array(
+				'role' => 'user',
+				'content' => $user_message
 			)
-		);
+		),
+		'max_tokens' => 150,
+		'temperature' => 0.7
+	);
+
+	error_log('Echo5 AI Chatbot: Sending request to OpenAI');
+	error_log('Echo5 AI Chatbot: Request body: ' . wp_json_encode($body));
+
+	$response = wp_remote_post($api_url, array(
+		'headers' => $headers,
+		'body' => wp_json_encode($body),
+		'timeout' => 30,
+		'data_format' => 'body'
+	));
+
+	if (is_wp_error($response)) {
+		error_log('Echo5 AI Chatbot: Request failed: ' . $response->get_error_message());
+		return $response;
 	}
 
-	if ( ! isset( $response_data['choices'][0]['message']['content'] ) ) {
-		// Log the unexpected response.
-		error_log( 'OpenAI Unexpected Response: ' . print_r( $response_data, true ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_print_r
+	$response_code = wp_remote_retrieve_response_code($response);
+	$response_body = wp_remote_retrieve_body($response);
+	
+	error_log('Echo5 AI Chatbot: Response code: ' . $response_code);
+	error_log('Echo5 AI Chatbot: Response body: ' . $response_body);
+
+	if ($response_code !== 200) {
 		return new WP_Error(
-			'openai_unexpected_response',
-			esc_html__( 'Unexpected response structure from OpenAI.', 'echo5-ai-chatbot' )
+			'api_error',
+			sprintf(__('OpenAI API Error (%d): %s', 'echo5-ai-chatbot'), 
+				 $response_code, 
+				 wp_remote_retrieve_response_message($response))
 		);
 	}
 
-	$ai_reply = trim( $response_data['choices'][0]['message']['content'] );
+	$data = json_decode($response_body, true);
+	if (!isset($data['choices'][0]['message']['content'])) {
+		error_log('Echo5 AI Chatbot: Invalid response structure');
+		return new WP_Error('invalid_response', __('Invalid response from OpenAI', 'echo5-ai-chatbot'));
+	}
 
-	return array( 'reply' => $ai_reply );
+	return array('reply' => $data['choices'][0]['message']['content']);
 }
 
 /**
