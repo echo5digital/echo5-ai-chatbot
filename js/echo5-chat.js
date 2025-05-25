@@ -166,28 +166,34 @@ document.addEventListener('DOMContentLoaded', function () {
      */
     function initializeChat() {
         console.log('initializeChat: Called. Current userName:', userName);
-        // Header text DOM manipulation is now moved to echo5ChatbotInit()
+        
+        // Ensure all DOM elements exist before proceeding
+        if (!chatContainer || !namePrompt || !userNameInput || !submitNameButton || 
+            !messageInput || !sendMessageButton || !chatMessages || !chatHeader) {
+            console.error('Echo5 Chatbot: Required DOM elements are missing!', {
+                chatContainer, namePrompt, userNameInput, submitNameButton,
+                messageInput, sendMessageButton, chatMessages, chatHeader
+            });
+            return;
+        }
+
+        // Set initial states
+        messageInput.disabled = true;
+        sendMessageButton.disabled = true;
 
         if (!userName) {
             console.log('initializeChat: No userName found, showing name prompt.');
-            if (namePrompt) namePrompt.style.display = 'block';
-            console.log('  namePrompt.style.display set to block');
+            namePrompt.style.display = 'block';
             if (namePromptParagraph) {
-                // Providing a default message if localizedData is not available.
-                const promptText = localizedData.name_prompt_text || "Welcome! Please enter your name to start chatting: <br><small>You can change your name later using /name [new_name]</small>";
-                namePromptParagraph.innerHTML = promptText;
+                namePromptParagraph.innerHTML = localizedData.name_prompt_text || 
+                    "Welcome! Please enter your name to start chatting: <br><small>You can change your name later using /name [new_name]</small>";
             }
-            if (messageInput) messageInput.disabled = true;
-            console.log('  messageInput.disabled set to true');
-            if (sendMessageButton) sendMessageButton.disabled = true;
-            console.log('  sendMessageButton.disabled set to true');
-            console.log('  userNameInput should be usable now.');
-            console.log('  submitNameButton should be usable now.');
         } else {
-            console.log('initializeChat: userName found:', userName, 'displaying welcome back.');
-            if (chatMessages) {
-                displayBotMessage(getPersonalizedMessage(welcomeBackTemplate, userName));
-            }
+            console.log('initializeChat: userName found:', userName, 'enabling chat.');
+            namePrompt.style.display = 'none';
+            messageInput.disabled = false;
+            sendMessageButton.disabled = false;
+            displayBotMessage(getPersonalizedMessage(welcomeBackTemplate, userName));
         }
     }
 
@@ -195,32 +201,25 @@ document.addEventListener('DOMContentLoaded', function () {
      * Handles the submission of the user's name from the initial prompt.
      */
     function handleSubmitName() {
-        console.log('handleSubmitName: Function defined. submitNameButton:', submitNameButton, 'userNameInput:', userNameInput);
-        if (!submitNameButton || !userNameInput) return;
+        if (!submitNameButton || !userNameInput) {
+            console.error('Echo5 Chatbot: Name submission elements missing!');
+            return;
+        }
 
-        submitNameButton.addEventListener('click', function () {
-            console.log('handleSubmitName: Event listener for submitNameButton attached.');
-            console.log('handleSubmitName: submitNameButton CLICKED!');
+        submitNameButton.addEventListener('click', function() {
             const name = userNameInput.value.trim();
-            console.log('handleSubmitName: Name entered:', name);
+            console.log('handleSubmitName: Processing name:', name);
+            
             if (name) {
-                console.log('handleSubmitName: Name is valid. Hiding namePrompt, enabling inputs.');
                 userName = name;
                 localStorage.setItem('echo5_user_name', userName);
-                if (namePrompt) namePrompt.style.display = 'none';
-                console.log('  namePrompt.style.display set to none');
-                if (messageInput) {
-                    messageInput.disabled = false;
-                    messageInput.focus();
-                }
-                console.log('  messageInput.disabled set to false');
-                if (sendMessageButton) sendMessageButton.disabled = false;
-                console.log('  sendMessageButton.disabled set to false');
-
-                if (chatMessages) {
-                    chatMessages.innerHTML = ''; // Clear previous messages
-                    displayBotMessage(getPersonalizedMessage(welcomeTemplate, userName));
-                }
+                namePrompt.style.display = 'none';
+                messageInput.disabled = false;
+                sendMessageButton.disabled = false;
+                messageInput.focus();
+                
+                chatMessages.innerHTML = '';
+                displayBotMessage(getPersonalizedMessage(welcomeTemplate, userName));
             } else {
                 alert(localizedData.enter_name_alert || 'Please enter your name.');
             }
@@ -455,5 +454,10 @@ document.addEventListener('DOMContentLoaded', function () {
         console.log('echo5ChatbotInit: All setup functions called.');
     }
 
-    echo5ChatbotInit();
+    // Initialize chat with error handling
+    try {
+        echo5ChatbotInit();
+    } catch (error) {
+        console.error('Echo5 Chatbot: Initialization failed!', error);
+    }
 });
