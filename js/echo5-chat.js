@@ -84,6 +84,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         endChatButton.addEventListener('click', function() {
             if (confirm(localizedData.end_chat_confirm || 'Are you sure you want to end the chat? A transcript will be sent.')) {
+                stopSpeech();
                 sendConversationToServer();
                 if (chatMessages) chatMessages.innerHTML = ''; // Clear messages
                 displayBotMessage(localizedData.chat_ended_message || "Chat ended. Thank you!");
@@ -379,51 +380,105 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!isWelcome && !isNameChange && !isChatEnded) {
              conversationHistory.push({ sender: 'bot', name: 'Bot', text: message, timestamp: new Date().toISOString() });
         }
+
+        // Speech synthesis for bot messages
+        if (isSpeechEnabled && message) {
+            // Stop any current speech
+            if (currentUtterance) {
+                synth.cancel();
+            }
+
+            // Create and configure new utterance
+            currentUtterance = new SpeechSynthesisUtterance(message.replace(/<[^>]*>/g, ''));
+
+            // Get and set female voice
+            const femaleVoice = getBestFemaleVoice();
+            if (femaleVoice) {
+                currentUtterance.voice = femaleVoice;
+            }
+
+            // Adjust voice characteristics for more natural female voice
+            currentUtterance.rate = 1.0;
+            currentUtterance.pitch = 1.2; // Slightly higher pitch for female voice
+            currentUtterance.volume = 1.0;
+
+            // Speak the message
+            synth.speak(currentUtterance);
+        }
     }
 
-    /**
-     * Sends the conversation history to the server via AJAX.
-     */
-    function sendConversationToServer() {
-        if (!userName) { 
-            console.warn("Echo5 Chatbot: User name not set, cannot send conversation.");
-            return;
-        }
-        if (conversationHistory.length === 0) {
-            console.info("Echo5 Chatbot: No conversation to send.");
-            return;
-        }
-        if (!ajaxUrl || !nonce) {
-            console.error("Echo5 Chatbot: AJAX URL or nonce is missing. Cannot send transcript.");
-            displayBotMessage("Error: Could not send transcript due to a configuration issue.");
-            return;
-        }
+    // Speech synthesis setup
+    const speechButton = document.getElementById('echo5-speech-toggle');
+    let isSpeechEnabled = localStorage.getItem('echo5_speech_enabled') === 'true';
+    const synth = window.speechSynthesis;
+    let currentUtterance = null;
 
-        const data = {
-            action: 'echo5_send_chat_transcript', // WordPress AJAX action
-            nonce: nonce, 
-            conversation: conversationHistory,
-            user_name: userName,
-        };
+    // Function to get the best available female voice
+    function getBestFemaleVoice() {
+        let voices = synth.getVoices();
+        
+        // Try to find a female English voice
+        let femaleVoice = voices.find(voice => 
+            voice.lang.includes('en') && 
+            !voice.lang.includes('en-IN') && // Avoid Indian English for better clarity
+            voice.name.toLowerCase().includes('female')
+        );
+        
+        // If no specific female voice found, try to find any voice with female indicators
+        if (!femaleVoice) {
+            femaleVoice = voices.find(voice => 
+                voice.name.toLowerCase().match(/female|woman|girl|samantha|karen|moira|tessa|monica/i)
+            );
+        }
+        
+        // Fallback to any English voice
+        if (!femaleVoice) {
+            femaleVoice = voices.find(voice => voice.lang.includes('en'));
+        }
+        
+        return femaleVoice;
+    }
 
-        // Using jQuery for AJAX as it's a dependency in WordPress admin and often available.
-        jQuery.ajax({
-            url: ajaxUrl,
-            type: 'POST',
-            data: data,
-            success: function(response) {
-                if (response.success) {
-                    console.info('Echo5 Chatbot: Transcript sent successfully.', response.data.message);
-                } else {
-                    console.error('Echo5 Chatbot: Error sending transcript.', response.data.message);
-                    displayBotMessage('Error: Could not send transcript. ' + (response.data.message || ''));
-                }
-            },
-            error: function(jqXHR, textStatus, errorThrown) {
-                console.error('Echo5 Chatbot: AJAX error sending transcript:', textStatus, errorThrown, jqXHR.responseText);
-                displayBotMessage('Error: Could not send transcript due to a network or server issue.');
+    // Initialize voice when voices are loaded
+    synth.onvoiceschanged = function() {
+        const femaleVoice = getBestFemaleVoice();
+        if (femaleVoice) {
+            console.log('Selected voice:', femaleVoice.name);
+        } else {
+            console.warn('No suitable voice found');
+        }
+    };
+
+    // Update speech button state
+    function updateSpeechButtonState() {
+        if (speechButton) {
+            speechButton.classList.toggle('active', isSpeechEnabled);
+            speechButton.querySelector('.echo5-speech-icon').textContent = isSpeechEnabled ? '🔊' : '🔈';
+        }
+    }
+
+    // Initialize speech button
+    if (speechButton) {
+        updateSpeechButtonState();
+        
+        speechButton.addEventListener('click', function() {
+            isSpeechEnabled = !isSpeechEnabled;
+            localStorage.setItem('echo5_speech_enabled', isSpeechEnabled);
+            updateSpeechButtonState();
+            
+            // Stop current speech if disabling
+            if (!isSpeechEnabled && currentUtterance) {
+                synth.cancel();
             }
         });
+    }
+
+    // Stop speech when ending chat
+    function stopSpeech() {
+        if (currentUtterance) {
+            synth.cancel();
+            currentUtterance = null;
+        }
     }
 
     // Initialize all parts of the chat

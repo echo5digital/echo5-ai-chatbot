@@ -102,6 +102,7 @@
 
 #echo5-chat-input-area {
     display: flex;
+    align-items: center;
     padding: 10px;
     border-top: 1px solid #ddd;
     background-color: #fff;
@@ -172,7 +173,34 @@
   background: #555;
 }
 
-/* Responsive adjustments for smaller screens */
+/* Styles for the speech button */
+.echo5-speech-button {
+    padding: 8px;
+    background: none;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-right: 5px;
+    transition: all 0.2s ease;
+}
+
+.echo5-speech-button:hover {
+    background-color: #f0f0f0;
+}
+
+.echo5-speech-button.active {
+    background-color: var(--echo5-chat-primary-color);
+    color: white;
+    border-color: var(--echo5-chat-primary-color);
+}
+
+.echo5-speech-icon {
+    font-size: 1.2em;
+    line-height: 1;
+    display: block;
+}
+
+/* Adjust responsive styles */
 @media (max-width: 480px) {
     #echo5-chat-container {
         width: 100%;
@@ -199,5 +227,13 @@
     #echo5-end-chat-button {
         padding: 2px 6px; /* Smaller button padding */
         font-size: 0.8em;
+    }
+
+    .echo5-speech-button {
+        padding: 6px;
+    }
+    
+    .echo5-speech-icon {
+        font-size: 1em;
     }
 }

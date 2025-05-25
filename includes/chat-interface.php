@@ -28,6 +28,9 @@ if ( ! defined( 'WPINC' ) ) {
                id="echo5-chat-message-input" 
                placeholder="<?php esc_attr_e('Type your message...', 'echo5-ai-chatbot'); ?>"
                disabled>
+        <button id="echo5-speech-toggle" class="echo5-speech-button" title="<?php esc_attr_e('Toggle Speech', 'echo5-ai-chatbot'); ?>">
+            <span class="echo5-speech-icon">🔊</span>
+        </button>
         <button id="echo5-send-message-button" disabled>
             <?php esc_html_e('Send', 'echo5-ai-chatbot'); ?>
         </button>
