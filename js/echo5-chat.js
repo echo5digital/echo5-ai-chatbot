@@ -413,7 +413,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const synth = window.speechSynthesis;
     let currentUtterance = null;
 
-    // Function to get the best available female voice
+    // Function to get the best available female voices
     function getBestFemaleVoice() {
         let voices = synth.getVoices();
         
