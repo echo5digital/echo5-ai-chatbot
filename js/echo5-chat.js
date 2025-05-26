@@ -515,4 +515,62 @@ document.addEventListener('DOMContentLoaded', function () {
     } catch (error) {
         console.error('Echo5 Chatbot: Initialization failed!', error);
     }
+
+    /**
+     * Handle mobile-specific setup and events
+     */
+    function setupMobileSupport() {
+        // Prevent zoom on input focus for iOS
+        if (messageInput) {
+            messageInput.style.fontSize = '16px'; // Prevents iOS zoom
+        }
+        if (userNameInput) {
+            userNameInput.style.fontSize = '16px'; // Prevents iOS zoom
+        }
+
+        // Handle viewport height changes (mobile browsers address bar)
+        let viewportHeight = window.innerHeight;
+        window.addEventListener('resize', function() {
+            if (window.innerHeight < viewportHeight) {
+                // Keyboard is probably showing
+                if (chatContainer) {
+                    chatContainer.style.height = window.innerHeight + 'px';
+                }
+            } else {
+                // Keyboard is probably hiding
+                if (chatContainer) {
+                    chatContainer.style.height = '100vh';
+                }
+            }
+            viewportHeight = window.innerHeight;
+        });
+
+        // Double tap prevention
+        if (sendMessageButton) {
+            sendMessageButton.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                this.click();
+            });
+        }
+
+        // Smooth scrolling for iOS
+        if (chatMessages) {
+            chatMessages.style.webkitOverflowScrolling = 'touch';
+        }
+    }
+
+    // Initialize mobile support
+    setupMobileSupport();
+
+    // Modify existing chat container position for mobile
+    if (window.innerWidth <= 480) {
+        if (chatContainer) {
+            chatContainer.style.position = 'fixed';
+            chatContainer.style.top = '0';
+            chatContainer.style.left = '0';
+            chatContainer.style.right = '0';
+            chatContainer.style.bottom = '0';
+            chatContainer.style.margin = '0';
+        }
+    }
 });
