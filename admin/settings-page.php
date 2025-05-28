@@ -44,10 +44,57 @@ function echo5_chatbot_api_key_section_callback() {
  * @since 0.1.2
  */
 function echo5_chatbot_api_key_field_callback() {
-	$api_key = get_option( 'echo5_chatbot_api_key', '' );
-	error_log('Echo5 AI Chatbot DEBUG: api_key_field_callback - Retrieved API Key (first 5 chars for display): ' . substr($api_key, 0, 5)); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-	echo '<input type="password" name="echo5_chatbot_api_key" value="' . esc_attr( $api_key ) . '" class="regular-text">';
-	echo '<p class="description">' . esc_html__( 'Your API key is stored securely and used only for OpenAI requests.', 'echo5-ai-chatbot' ) . '</p>';
+    $api_key = get_option('echo5_chatbot_api_key', '');
+    echo '<input type="password" name="echo5_chatbot_api_key" value="' . esc_attr($api_key) . '" class="regular-text">';
+    echo '<button type="button" id="echo5-test-api-key" class="button button-secondary">' . 
+         esc_html__('Test API Key', 'echo5-ai-chatbot') . '</button>';
+    echo '<div id="echo5-api-key-test-result" style="margin-top: 10px;"></div>';
+    echo '<p class="description">' . 
+         esc_html__('Enter your OpenAI API key. After saving, use the Test button to verify it works.', 'echo5-ai-chatbot') . 
+         '</p>';
+    
+    // Add JavaScript for API key testing
+    ?>
+    <script type="text/javascript">
+    jQuery(document).ready(function($) {
+        $('#echo5-test-api-key').on('click', function() {
+            const button = $(this);
+            const resultDiv = $('#echo5-api-key-test-result');
+            
+            button.prop('disabled', true);
+            button.text('Testing...');
+            resultDiv.html('');
+            
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'echo5_test_api_key',
+                    nonce: '<?php echo wp_create_nonce("echo5_test_api_key"); ?>'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        resultDiv.html('<div class="notice notice-success inline"><p>' + 
+                            response.data.message + '</p></div>');
+                    } else {
+                        resultDiv.html('<div class="notice notice-error inline"><p>' + 
+                            response.data.message + '</p></div>');
+                    }
+                },
+                error: function() {
+                    resultDiv.html('<div class="notice notice-error inline"><p><?php 
+                        esc_html_e("Error testing API key. Please try again.", "echo5-ai-chatbot"); 
+                    ?></p></div>');
+                },
+                complete: function() {
+                    button.prop('disabled', false);
+                    button.text('<?php esc_html_e("Test API Key", "echo5-ai-chatbot"); ?>');
+                }
+            });
+        });
+    });
+    </script>
+    <?php
 }
 
 /**

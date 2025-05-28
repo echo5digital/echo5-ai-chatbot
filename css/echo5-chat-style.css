@@ -6,18 +6,23 @@
 
 #echo5-chat-container {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
+    bottom: 0;
+    right: 0;
     width: 350px;
+    height: auto;
+    min-height: 50px;
     max-height: 500px;
     border: 1px solid #ccc;
+    border-right: none;
+    border-bottom: none;
     background-color: #fff;
     display: flex;
     flex-direction: column;
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    border-radius: 5px;
+    border-radius: 5px 0 0 0;
     overflow: hidden;
-    z-index: 9999; 
+    z-index: 9999;
+    margin: 0;
 }
 
 #echo5-chat-header {
@@ -33,11 +38,13 @@
 }
 
 #echo5-chat-messages {
-    flex-grow: 1;
-    padding: 10px;
+    flex: 1;
     overflow-y: auto;
-    min-height: 200px; 
+    min-height: 100px;
+    max-height: calc(100vh - 150px);
     background-color: #f9f9f9;
+    margin: 0;
+    padding: 10px;
 }
 
 .echo5-message {
@@ -105,6 +112,7 @@
     padding: 10px;
     border-top: 1px solid #ddd;
     background-color: #fff;
+    margin: 0;
 }
 
 #echo5-chat-message-input {
@@ -176,16 +184,13 @@
 @media (max-width: 480px) {
     #echo5-chat-container {
         width: 100%;
-        max-width: 100%;
         height: 100vh;
         max-height: 100vh;
         bottom: 0;
         right: 0;
+        border: none;
         border-radius: 0;
-        position: fixed;
         margin: 0;
-        display: flex;
-        flex-direction: column;
     }
 
     #echo5-chat-header {
@@ -211,8 +216,9 @@
 
     #echo5-chat-messages {
         flex: 1;
-        height: calc(100vh - 120px);
-        min-height: auto;
+        height: calc(100vh - 110px);
+        max-height: none;
+        min-height: 0;
         padding: 8px;
     }
 
@@ -266,6 +272,14 @@
         padding: 6px;
     }
 
+    #echo5-minimize-button {
+        padding: 2px 6px;
+        font-size: 14px;
+        width: 26px;
+        height: 26px;
+        margin-top: 4px;
+    }
+
     /* Improve touch targets */
     button, 
     input[type="text"],
@@ -297,4 +311,28 @@
         right: 10px;
         max-height: 80vh;
     }
+}
+
+#echo5-minimize-button {
+    cursor: pointer;
+    padding: 8px;
+    background-color: transparent;
+    border: none;
+    color: var(--echo5-chat-primary-color);
+    font-size: 16px;
+    transition: background-color 0.3s;
+    border-radius: 3px;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    text-align: center;
+    width: 100%;
+}
+
+#echo5-minimize-button:hover {
+    background-color: rgba(255,255,255,0.1);
+}
+
+#echo5-minimize-button:active {
+    background-color: rgba(255,255,255,0.2);
 }

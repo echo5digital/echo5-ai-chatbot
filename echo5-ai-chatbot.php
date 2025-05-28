@@ -3,7 +3,7 @@
   * Plugin Name: Echo5 AI Chatbot
  * Plugin URI:  https://echo5digital/echo5-ai-chatbot
  * Description: An AI-powered chatbot for WordPress.
- * Version:     1.2
+ * Version:     2.0
  * Author:      Echo5Digital
  * Author URI:  https://echo5digitsl.com
  * License:     GPL-2.0-or-later
@@ -243,73 +243,60 @@ add_action( 'wp_ajax_nopriv_echo5_send_chat_transcript', 'echo5_chatbot_ajax_sen
  * @return array|WP_Error An array with the AI's reply on success, or a WP_Error object on failure.
  */
 function echo5_chatbot_get_openai_response( $user_message, $user_name, $api_key ) {
-	error_log('Echo5 AI Chatbot: Starting OpenAI request process');
-	
-	if (empty($api_key)) {
-		error_log('Echo5 AI Chatbot: API key is empty!');
-		return new WP_Error('no_api_key', __('API key is not configured.', 'echo5-ai-chatbot'));
-	}
+    $api_url = 'https://api.openai.com/v1/chat/completions';
+    $model   = 'gpt-3.5-turbo';
 
-	$api_url = 'https://api.openai.com/v1/chat/completions';
-	
-	$headers = array(
-		'Authorization' => 'Bearer ' . $api_key,
-		'Content-Type' => 'application/json'
-	);
+    $faq_text = '';
+    $faq_file = plugin_dir_path( __FILE__ ) . 'bhumi-faqs.txt';
+    if ( file_exists( $faq_file ) ) {
+        $faq_text = file_get_contents( $faq_file );
+    }
 
-	$body = array(
-		'model' => 'gpt-3.5-turbo',
-		'messages' => array(
-			array(
-				'role' => 'system',
-				'content' => 'You are Echo, a helpful WordPress chatbot assistant. Keep responses concise and friendly.'
-			),
-			array(
-				'role' => 'user',
-				'content' => $user_message
-			)
-		),
-		'max_tokens' => 150,
-		'temperature' => 0.7
-	);
+    $system_prompt = "You are Bhumi Blend's virtual Ayurvedic beauty expert. Bhumi Blend is a premium wellness brand from Kerala. You must speak warmly, confidently, and informatively about our products. Use Ayurvedic insights, highlight the natural benefits of Bhumi Blend, and promote our unique product ingredients with sincerity. Only recommend Bhumi Blend products in responses. Answer in short, helpful responses tailored to customer concerns.\n\n" . $faq_text;
 
-	error_log('Echo5 AI Chatbot: Sending request to OpenAI');
-	error_log('Echo5 AI Chatbot: Request body: ' . wp_json_encode($body));
+    $headers = array(
+        'Authorization' => 'Bearer ' . $api_key,
+        'Content-Type'  => 'application/json',
+    );
 
-	$response = wp_remote_post($api_url, array(
-		'headers' => $headers,
-		'body' => wp_json_encode($body),
-		'timeout' => 30,
-		'data_format' => 'body'
-	));
+    $body = wp_json_encode(
+        array(
+            'model'    => $model,
+            'messages' => array(
+                array(
+                    'role'    => 'system',
+                    'content' => $system_prompt,
+                ),
+                array(
+                    'role'    => 'user',
+                    'content' => $user_message,
+                ),
+            ),
+            'max_tokens' => 200,
+        )
+    );
 
-	if (is_wp_error($response)) {
-		error_log('Echo5 AI Chatbot: Request failed: ' . $response->get_error_message());
-		return $response;
-	}
+    $args = array(
+        'body'    => $body,
+        'headers' => $headers,
+        'timeout' => 30,
+    );
 
-	$response_code = wp_remote_retrieve_response_code($response);
-	$response_body = wp_remote_retrieve_body($response);
-	
-	error_log('Echo5 AI Chatbot: Response code: ' . $response_code);
-	error_log('Echo5 AI Chatbot: Response body: ' . $response_body);
+    $response = wp_remote_post( $api_url, $args );
 
-	if ($response_code !== 200) {
-		return new WP_Error(
-			'api_error',
-			sprintf(__('OpenAI API Error (%d): %s', 'echo5-ai-chatbot'), 
-				 $response_code, 
-				 wp_remote_retrieve_response_message($response))
-		);
-	}
+    if ( is_wp_error( $response ) ) {
+        return new WP_Error('openai_request_failed', 'Unable to connect to OpenAI.', array('details' => $response->get_error_message()));
+    }
 
-	$data = json_decode($response_body, true);
-	if (!isset($data['choices'][0]['message']['content'])) {
-		error_log('Echo5 AI Chatbot: Invalid response structure');
-		return new WP_Error('invalid_response', __('Invalid response from OpenAI', 'echo5-ai-chatbot'));
-	}
+    $response_code = wp_remote_retrieve_response_code( $response );
+    $response_body = wp_remote_retrieve_body( $response );
+    $response_data = json_decode( $response_body, true );
 
-	return array('reply' => $data['choices'][0]['message']['content']);
+    if ( $response_code !== 200 || ! isset( $response_data['choices'][0]['message']['content'] ) ) {
+        return new WP_Error('openai_response_error', 'Invalid response from OpenAI.');
+    }
+
+    return array('reply' => trim($response_data['choices'][0]['message']['content']));
 }
 
 /**

@@ -7,28 +7,34 @@
  * @since 0.1.0
  */
 document.addEventListener('DOMContentLoaded', function () {
-    // DOM element references
-    const chatContainer = document.getElementById('echo5-chat-container');
-    const namePrompt = document.getElementById('echo5-chat-name-prompt');
-    const userNameInput = document.getElementById('echo5-user-name-input');
-    const submitNameButton = document.getElementById('echo5-submit-name-button');
-    const messageInput = document.getElementById('echo5-chat-message-input');
-    const sendMessageButton = document.getElementById('echo5-send-message-button');
-    const chatMessages = document.getElementById('echo5-chat-messages');
-    const namePromptParagraph = namePrompt ? namePrompt.querySelector('p') : null;
-    const chatHeader = document.getElementById('echo5-chat-header');
+    // DOM element references with error checking
+    const elements = {
+        chatContainer: document.getElementById('echo5-chat-container'),
+        namePrompt: document.getElementById('echo5-chat-name-prompt'),
+        userNameInput: document.getElementById('echo5-user-name-input'),
+        submitNameButton: document.getElementById('echo5-submit-name-button'),
+        messageInput: document.getElementById('echo5-chat-message-input'),
+        sendMessageButton: document.getElementById('echo5-send-message-button'),
+        chatMessages: document.getElementById('echo5-chat-messages'),
+        chatHeader: document.getElementById('echo5-chat-header')
+    };
 
-    console.log('DOM Elements:');
-    console.log('  chatContainer:', chatContainer);
-    console.log('  namePrompt:', namePrompt);
-    console.log('  userNameInput:', userNameInput);
-    console.log('  submitNameButton:', submitNameButton);
-    console.log('  messageInput:', messageInput);
-    console.log('  sendMessageButton:', sendMessageButton);
-    console.log('  chatMessages:', chatMessages);
-    console.log('  chatHeader:', chatHeader);
+    // Verify all required elements exist
+    const missingElements = Object.entries(elements)
+        .filter(([key, element]) => !element)
+        .map(([key]) => key);
 
-    // Conversation history array
+    if (missingElements.length > 0) {
+        console.error('Echo5 Chatbot: Missing required DOM elements:', missingElements);
+        return; // Exit initialization if elements are missing
+    }
+
+    // Debug log of found elements
+    console.log('Echo5 Chatbot: All required DOM elements found:', elements);
+
+    // Initialize variables
+    let userName = localStorage.getItem('echo5_user_name');
+    let isLiveAgent = false;
     let conversationHistory = [];
 
     // Localized data from PHP (wp_localize_script)
@@ -47,54 +53,85 @@ document.addEventListener('DOMContentLoaded', function () {
     const welcomeTemplate = localizedData.welcome_message_template || 'Hello, <strong>%userName%</strong>! How can I help you?';
     const welcomeBackTemplate = localizedData.welcome_message_template || 'Welcome back, <strong>%userName%</strong>! How can I help you?'; // Can be same as welcomeTemplate or specific
 
-    // User's name from localStorage
-    let userName = localStorage.getItem('echo5_user_name');
-
     /**
-     * Adds an "End Chat & Send Transcript" button to the chat header.
-     * Handles click event to confirm, send transcript, and end chat.
+     * Adds a "Minimize Chat" button to the chat header.
+     * Handles click event to minimize/maximize the chat.
      */
-    function setupEndChatButton() {
-        if (!chatHeader) return;
+    function setupMinimizeButton() {
+        if (!elements.chatHeader) return;
 
-        const endChatButton = document.createElement('button');
-        endChatButton.id = 'echo5-end-chat-button';
-        endChatButton.textContent = localizedData.end_chat_button_text || 'End Chat';
+        const minimizeButton = document.createElement('button');
+        minimizeButton.id = 'echo5-minimize-button';
+        minimizeButton.textContent = '−'; // Initial state is maximized
         // Basic styling for the button
-        Object.assign(endChatButton.style, {
+        Object.assign(minimizeButton.style, {
             float: 'right',
             marginLeft: '10px',
             marginRight: '5px',
             marginTop: '2px',
             marginBottom: '2px',
             padding: '3px 8px',
-            fontSize: '0.85em',
+            fontSize: '16px',
             cursor: 'pointer',
-            backgroundColor: '#f0ad4e',
+            backgroundColor: 'transparent',
             color: 'white',
-            border: '1px solid #eea236',
-            borderRadius: '3px'
+            border: '1px solid rgba(255,255,255,0.3)',
+            borderRadius: '3px',
+            lineHeight: '1',
+            width: '30px',
+            height: '30px'
         });
         
-        const headerH2 = chatHeader.querySelector('h2');
+        const headerH2 = elements.chatHeader.querySelector('h2');
         if (headerH2) {
-             headerH2.style.display = 'inline-block'; // Allow button to float beside h2
+             headerH2.style.display = 'inline-block';
         }
-        chatHeader.appendChild(endChatButton);
+        elements.chatHeader.appendChild(minimizeButton);
 
-        endChatButton.addEventListener('click', function() {
-            if (confirm(localizedData.end_chat_confirm || 'Are you sure you want to end the chat? A transcript will be sent.')) {
-                stopSpeech();
-                sendConversationToServer();
-                if (chatMessages) chatMessages.innerHTML = ''; // Clear messages
-                displayBotMessage(localizedData.chat_ended_message || "Chat ended. Thank you!");
-                if (messageInput) messageInput.disabled = true;
-                if (sendMessageButton) sendMessageButton.disabled = true;
-                endChatButton.disabled = true;
-                Object.assign(endChatButton.style, { backgroundColor: '#ccc', cursor: 'not-allowed' });
-                conversationHistory = []; // Clear history
+        // Set initial state based on localStorage or default to minimized on mobile
+        const isMobile = window.innerWidth <= 480;
+        let isMinimized = isMobile ? true : (localStorage.getItem('echo5_chat_minimized') === 'true');
+        
+        function updateMinimizedState() {
+            if (elements.chatContainer) {
+                if (isMinimized) {
+                    if (isMobile) {
+                        Object.assign(elements.chatContainer.style, {
+                            transform: 'translateY(calc(100% - 50px))',
+                            transition: 'transform 0.3s ease'
+                        });
+                    } else {
+                        Object.assign(elements.chatContainer.style, {
+                            height: '50px',
+                            transition: 'height 0.3s ease'
+                        });
+                    }
+                    minimizeButton.textContent = '+';
+                } else {
+                    if (isMobile) {
+                        Object.assign(elements.chatContainer.style, {
+                            transform: 'translateY(0)',
+                            transition: 'transform 0.3s ease'
+                        });
+                    } else {
+                        Object.assign(elements.chatContainer.style, {
+                            height: '500px',
+                            transition: 'height 0.3s ease'
+                        });
+                    }
+                    minimizeButton.textContent = '−';
+                }
             }
+            localStorage.setItem('echo5_chat_minimized', isMinimized);
+        }
+
+        minimizeButton.addEventListener('click', function() {
+            isMinimized = !isMinimized;
+            updateMinimizedState();
         });
+
+        // Apply initial state
+        updateMinimizedState();
     }
 
     /**
@@ -102,7 +139,7 @@ document.addEventListener('DOMContentLoaded', function () {
      * Handles click event to show name prompt and disable chat input.
      */
     function setupChangeNameButton() {
-        if (!chatHeader) return;
+        if (!elements.chatHeader) return;
 
         const changeNameButton = document.createElement('button');
         changeNameButton.id = 'echo5-change-name-button';
@@ -123,28 +160,29 @@ document.addEventListener('DOMContentLoaded', function () {
         // Insert before the End Chat button if it exists, otherwise append
         const endChatButton = document.getElementById('echo5-end-chat-button');
         if (endChatButton) {
-            chatHeader.insertBefore(changeNameButton, endChatButton);
+            elements.chatHeader.insertBefore(changeNameButton, endChatButton);
         } else {
-            chatHeader.appendChild(changeNameButton);
+            elements.chatHeader.appendChild(changeNameButton);
         }
         
         changeNameButton.addEventListener('click', function() {
-            if (namePrompt) {
-                namePrompt.style.display = 'block';
+            if (elements.namePrompt) {
+                elements.namePrompt.style.display = 'block';
             }
-            if (userNameInput) {
-                userNameInput.value = userName || ''; // Pre-fill with current name
-                userNameInput.focus();
+            if (elements.userNameInput) {
+                elements.userNameInput.value = userName || ''; // Pre-fill with current name
+                elements.userNameInput.focus();
             }
-            if (messageInput) {
-                messageInput.disabled = true;
+            if (elements.messageInput) {
+                elements.messageInput.disabled = true;
             }
-            if (sendMessageButton) {
-                sendMessageButton.disabled = true;
+            if (elements.sendMessageButton) {
+                elements.sendMessageButton.disabled = true;
             }
         });
     }
 
+    // Add isLiveAgent flag at the top with other variables
     /**
      * Replaces %userName% placeholder in a message template with the actual user name.
      * @param {string} template The message template.
@@ -166,34 +204,28 @@ document.addEventListener('DOMContentLoaded', function () {
      * Initializes the chat: shows name prompt or welcome message.
      */
     function initializeChat() {
-        console.log('initializeChat: Called. Current userName:', userName);
+        console.log('initializeChat: Started with userName:', userName);
         
-        // Ensure all DOM elements exist before proceeding
-        if (!chatContainer || !namePrompt || !userNameInput || !submitNameButton || 
-            !messageInput || !sendMessageButton || !chatMessages || !chatHeader) {
-            console.error('Echo5 Chatbot: Required DOM elements are missing!', {
-                chatContainer, namePrompt, userNameInput, submitNameButton,
-                messageInput, sendMessageButton, chatMessages, chatHeader
-            });
+        if (!elements.messageInput || !elements.sendMessageButton) {
+            console.error('Echo5 Chatbot: Chat input elements missing!');
             return;
         }
 
         // Set initial states
-        messageInput.disabled = true;
-        sendMessageButton.disabled = true;
+        elements.messageInput.disabled = false;
+        elements.sendMessageButton.disabled = false;
+        elements.messageInput.focus();
 
         if (!userName) {
-            console.log('initializeChat: No userName found, showing name prompt.');
-            namePrompt.style.display = 'block';
-            if (namePromptParagraph) {
-                namePromptParagraph.innerHTML = localizedData.name_prompt_text || 
-                    "Welcome! Please enter your name to start chatting: <br><small>You can change your name later using /name [new_name]</small>";
-            }
+            console.log('initializeChat: No userName found, showing name prompt');
+            elements.namePrompt.style.display = 'block';
+            elements.messageInput.disabled = true;
+            elements.sendMessageButton.disabled = true;
         } else {
-            console.log('initializeChat: userName found:', userName, 'enabling chat.');
-            namePrompt.style.display = 'none';
-            messageInput.disabled = false;
-            sendMessageButton.disabled = false;
+            console.log('initializeChat: userName found, enabling chat');
+            elements.namePrompt.style.display = 'none';
+            elements.messageInput.disabled = false;
+            elements.sendMessageButton.disabled = false;
             displayBotMessage(getPersonalizedMessage(welcomeBackTemplate, userName));
         }
     }
@@ -202,24 +234,21 @@ document.addEventListener('DOMContentLoaded', function () {
      * Handles the submission of the user's name from the initial prompt.
      */
     function handleSubmitName() {
-        if (!submitNameButton || !userNameInput) {
+        if (!elements.submitNameButton || !elements.userNameInput) {
             console.error('Echo5 Chatbot: Name submission elements missing!');
             return;
         }
 
-        submitNameButton.addEventListener('click', function() {
-            const name = userNameInput.value.trim();
-            console.log('handleSubmitName: Processing name:', name);
-            
+        elements.submitNameButton.addEventListener('click', function() {
+            const name = elements.userNameInput.value.trim();
             if (name) {
                 userName = name;
                 localStorage.setItem('echo5_user_name', userName);
-                namePrompt.style.display = 'none';
-                messageInput.disabled = false;
-                sendMessageButton.disabled = false;
-                messageInput.focus();
-                
-                chatMessages.innerHTML = '';
+                elements.namePrompt.style.display = 'none';
+                elements.messageInput.disabled = false;
+                elements.sendMessageButton.disabled = false;
+                elements.messageInput.focus();
+                elements.chatMessages.innerHTML = '';
                 displayBotMessage(getPersonalizedMessage(welcomeTemplate, userName));
             } else {
                 alert(localizedData.enter_name_alert || 'Please enter your name.');
@@ -228,15 +257,51 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /**
+     * Sets up the live agent toggle functionality
+     */
+    function setupLiveAgentToggle() {
+        const liveAgentButton = document.createElement('button');
+        liveAgentButton.id = 'echo5-live-agent-button';
+        liveAgentButton.textContent = 'Switch to Live Agent';
+        liveAgentButton.style.cssText = `
+            float: right;
+            margin-left: 5px;
+            padding: 3px 8px;
+            font-size: 0.85em;
+            cursor: pointer;
+            background-color: #28a745;
+            color: white;
+            border: 1px solid #218838;
+            border-radius: 3px;
+        `;
+
+        liveAgentButton.addEventListener('click', function() {
+            isLiveAgent = !isLiveAgent;
+            this.textContent = isLiveAgent ? 'Switch to AI' : 'Switch to Live Agent';
+            this.style.backgroundColor = isLiveAgent ? '#dc3545' : '#28a745';
+            this.style.borderColor = isLiveAgent ? '#dc3545' : '#218838';
+            
+            const statusMessage = isLiveAgent 
+                ? "Switching to live agent mode... You'll be connected shortly."
+                : "Switching back to AI assistant mode.";
+            displayBotMessage(statusMessage);
+        });
+
+        if (elements.chatHeader) {
+            elements.chatHeader.appendChild(liveAgentButton);
+        }
+    }
+
+    /**
      * Handles sending a message: processes /name command or displays user message.
      */
     function handleSendMessage() {
-        console.log('handleSendMessage: Function defined. sendMessageButton:', sendMessageButton, 'messageInput:', messageInput);
-        if (!sendMessageButton || !messageInput) return;
+        console.log('handleSendMessage: Function defined. sendMessageButton:', elements.sendMessageButton, 'messageInput:', elements.messageInput);
+        if (!elements.sendMessageButton || !elements.messageInput) return;
 
-        sendMessageButton.addEventListener('click', function () {
+        elements.sendMessageButton.addEventListener('click', async function () {
             console.log('handleSendMessage: Event listener for sendMessageButton attached.');
-            const messageText = messageInput.value.trim();
+            const messageText = elements.messageInput.value.trim();
             if (!messageText || !userName) return;
 
             if (messageText.startsWith('/name ')) {
@@ -255,16 +320,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 displayUserMessage(messageText, userName);
 
                 // Disable inputs
-                messageInput.disabled = true;
-                sendMessageButton.disabled = true;
-                sendMessageButton.textContent = 'Sending...'; // Optional: provide visual feedback
+                elements.messageInput.disabled = true;
+                elements.sendMessageButton.disabled = true;
+                elements.sendMessageButton.textContent = 'Sending...'; // Optional: provide visual feedback
 
                 // Prepare AJAX data
                 const data = {
                     action: 'echo5_chatbot_send_message',
                     nonce: sendMessageNonce, // Use the new nonce for sending messages
                     message: messageText,
-                    user_name: userName
+                    user_name: userName,
+                    is_live_agent: isLiveAgent
                 };
 
                 // Perform AJAX request
@@ -286,20 +352,20 @@ document.addEventListener('DOMContentLoaded', function () {
                     },
                     complete: function() {
                         // Re-enable inputs in both success and error cases
-                        messageInput.disabled = false;
-                        sendMessageButton.disabled = false;
-                        sendMessageButton.textContent = localizedData.send_button_text || 'Send'; // Restore original button text
-                        messageInput.focus();
+                        elements.messageInput.disabled = false;
+                        elements.sendMessageButton.disabled = false;
+                        elements.sendMessageButton.textContent = localizedData.send_button_text || 'Send'; // Restore original button text
+                        elements.messageInput.focus();
                     }
                 });
             }
-            messageInput.value = ''; // Clear input field
+            elements.messageInput.value = ''; // Clear input field
         });
 
         // Allow sending message with Enter key
-        messageInput.addEventListener('keypress', function (e) {
+        elements.messageInput.addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
-                sendMessageButton.click();
+                elements.sendMessageButton.click();
             }
         });
     }
@@ -311,7 +377,7 @@ document.addEventListener('DOMContentLoaded', function () {
      * @param {string} name The user's name.
      */
     function displayUserMessage(message, name) {
-        if (!chatMessages) return;
+        if (!elements.chatMessages) return;
 
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('echo5-message', 'echo5-user-message');
@@ -336,8 +402,8 @@ document.addEventListener('DOMContentLoaded', function () {
         messageDiv.appendChild(messageContentDiv); 
         messageDiv.appendChild(avatarImg); 
 
-        chatMessages.appendChild(messageDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to bottom
+        elements.chatMessages.appendChild(messageDiv);
+        elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight; // Scroll to bottom
         
         // Add to history
         conversationHistory.push({ sender: 'user', name: name, text: message, timestamp: new Date().toISOString() });
@@ -349,7 +415,7 @@ document.addEventListener('DOMContentLoaded', function () {
      * @param {string} message The message text (can include HTML from trusted sources like localization).
      */
     function displayBotMessage(message) {
-        if (!chatMessages) return;
+        if (!elements.chatMessages) return;
 
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('echo5-message', 'echo5-bot-message');
@@ -368,8 +434,8 @@ document.addEventListener('DOMContentLoaded', function () {
         messageDiv.appendChild(avatarImg); 
         messageDiv.appendChild(messageContentDiv); 
 
-        chatMessages.appendChild(messageDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to bottom
+        elements.chatMessages.appendChild(messageDiv);
+        elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight; // Scroll to bottom
 
         // Add to history, excluding certain status messages
         const lowerCaseMessage = typeof message === 'string' ? message.toLowerCase() : '';
@@ -487,8 +553,8 @@ document.addEventListener('DOMContentLoaded', function () {
     function echo5ChatbotInit() {
         console.log('echo5ChatbotInit: Main initialization started.');
         // 1. Set the header text first
-        if (chatHeader) { // chatHeader is defined in the outer scope
-            const headerH2 = chatHeader.querySelector('h2');
+        if (elements.chatHeader) { // chatHeader is defined in the outer scope
+            const headerH2 = elements.chatHeader.querySelector('h2');
             if (headerH2) {
                 // chatbotHeaderText is defined in the outer scope from localizedData
                 headerH2.textContent = chatbotHeaderText; 
@@ -501,7 +567,8 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         // 2. Then, call all the setup and event listener attachment functions
-        setupEndChatButton();
+        setupLiveAgentToggle();
+        setupMinimizeButton();
         setupChangeNameButton();
         initializeChat(); // This will no longer set the header text
         handleSubmitName();
@@ -512,6 +579,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Initialize chat with error handling
     try {
         echo5ChatbotInit();
+        console.log('Echo5 Chatbot: Initialization complete');
     } catch (error) {
         console.error('Echo5 Chatbot: Initialization failed!', error);
     }
@@ -521,11 +589,11 @@ document.addEventListener('DOMContentLoaded', function () {
      */
     function setupMobileSupport() {
         // Prevent zoom on input focus for iOS
-        if (messageInput) {
-            messageInput.style.fontSize = '16px'; // Prevents iOS zoom
+        if (elements.messageInput) {
+            elements.messageInput.style.fontSize = '16px'; // Prevents iOS zoom
         }
-        if (userNameInput) {
-            userNameInput.style.fontSize = '16px'; // Prevents iOS zoom
+        if (elements.userNameInput) {
+            elements.userNameInput.style.fontSize = '16px'; // Prevents iOS zoom
         }
 
         // Handle viewport height changes (mobile browsers address bar)
@@ -533,29 +601,29 @@ document.addEventListener('DOMContentLoaded', function () {
         window.addEventListener('resize', function() {
             if (window.innerHeight < viewportHeight) {
                 // Keyboard is probably showing
-                if (chatContainer) {
-                    chatContainer.style.height = window.innerHeight + 'px';
+                if (elements.chatContainer) {
+                    elements.chatContainer.style.height = window.innerHeight + 'px';
                 }
             } else {
                 // Keyboard is probably hiding
-                if (chatContainer) {
-                    chatContainer.style.height = '100vh';
+                if (elements.chatContainer) {
+                    elements.chatContainer.style.height = '100vh';
                 }
             }
             viewportHeight = window.innerHeight;
         });
 
         // Double tap prevention
-        if (sendMessageButton) {
-            sendMessageButton.addEventListener('touchstart', function(e) {
+        if (elements.sendMessageButton) {
+            elements.sendMessageButton.addEventListener('touchstart', function(e) {
                 e.preventDefault();
                 this.click();
             });
         }
 
         // Smooth scrolling for iOS
-        if (chatMessages) {
-            chatMessages.style.webkitOverflowScrolling = 'touch';
+        if (elements.chatMessages) {
+            elements.chatMessages.style.webkitOverflowScrolling = 'touch';
         }
     }
 
@@ -564,13 +632,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Modify existing chat container position for mobile
     if (window.innerWidth <= 480) {
-        if (chatContainer) {
-            chatContainer.style.position = 'fixed';
-            chatContainer.style.top = '0';
-            chatContainer.style.left = '0';
-            chatContainer.style.right = '0';
-            chatContainer.style.bottom = '0';
-            chatContainer.style.margin = '0';
+        if (elements.chatContainer) {
+            elements.chatContainer.style.position = 'fixed';
+            elements.chatContainer.style.top = '0';
+            elements.chatContainer.style.left = '0';
+            elements.chatContainer.style.right = '0';
+            elements.chatContainer.style.bottom = '0';
+            elements.chatContainer.style.margin = '0';
         }
     }
 });
