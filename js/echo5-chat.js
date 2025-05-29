@@ -78,10 +78,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (elements.liveAgentToggle) {
         elements.liveAgentToggle.addEventListener('click', function() {
             isLiveAgent = !isLiveAgent;
-            this.textContent = isLiveAgent ? 'Switch to AI' : 'Switch to Live Agent';
+            this.textContent = isLiveAgent ? 'Switch to AI' : 'Switch to Live Support';
             this.classList.toggle('active', isLiveAgent);
             displayBotMessage(isLiveAgent ? 
-                'Switching to live agent mode. Please wait while we connect you...' : 
+                'Switching to live support mode. Please wait while we connect you...' : 
                 'Switching back to AI assistant mode.');
         });
     }
@@ -155,6 +155,13 @@ document.addEventListener('DOMContentLoaded', function() {
         elements.messageInput.value = '';
         disableChat();
 
+        // Create and show typing indicator
+        const template = document.getElementById('echo5-typing-indicator-template');
+        const typingIndicator = template.content.cloneNode(true).querySelector('.echo5-typing-indicator');
+        elements.chatMessages.appendChild(typingIndicator);
+        typingIndicator.style.display = 'block';
+        elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+
         try {
             const response = await jQuery.ajax({
                 url: echo5_chatbot_data.ajax_url,
@@ -168,12 +175,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
 
+            // Remove typing indicator
+            typingIndicator.remove();
+
             if (response.success) {
                 displayBotMessage(response.data.reply);
             } else {
                 displayBotMessage('Error: ' + (response.data?.message || 'Something went wrong'));
             }
         } catch (error) {
+            // Remove typing indicator on error
+            typingIndicator.remove();
             console.error('AJAX error:', error);
             displayBotMessage('Error: Could not connect to the server.');
         } finally {
@@ -192,7 +204,7 @@ document.addEventListener('DOMContentLoaded', function() {
         elements.chatMessages.appendChild(messageDiv);
         elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
     }    function displayBotMessage(message) {
-        const messageDiv = createMessageElement('bot', 'Live Agent', message);
+        const messageDiv = createMessageElement('bot', 'Live Support', message);
         elements.chatMessages.appendChild(messageDiv);
         elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
     }

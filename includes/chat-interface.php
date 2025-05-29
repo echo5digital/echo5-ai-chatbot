@@ -21,7 +21,16 @@ if ( ! defined( 'WPINC' ) ) {
         </button>
     </div>
     
-    <div id="echo5-chat-messages"></div>
+    <div id="echo5-chat-messages">
+        <!-- Template for typing indicator -->
+        <template id="echo5-typing-indicator-template">
+            <div class="echo5-typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </template>
+    </div>
     
     <div id="echo5-chat-name-prompt">
         <p><?php esc_html_e('Please enter your name to start chatting', 'echo5-ai-chatbot'); ?></p>

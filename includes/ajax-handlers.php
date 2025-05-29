@@ -23,7 +23,7 @@ function echo5_chatbot_handle_message() {
 
     if ($is_live_agent) {
         wp_send_json_success(array(
-            'reply' => "Live agent support is connecting. Your position in queue: 1\nA representative will be with you shortly."
+            'reply' => "Live support is connecting. Your position in queue: 1\nA representative will be with you shortly."
         ));
         return;
     }
