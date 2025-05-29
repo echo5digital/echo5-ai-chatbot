@@ -3,7 +3,7 @@
   * Plugin Name: Echo5 AI Chatbot
  * Plugin URI:  https://echo5digital/echo5-ai-chatbot
  * Description: An AI-powered chatbot for WordPress.
- * Version:     2.0
+ * Version:     2.2
  * Author:      Echo5Digital
  * Author URI:  https://echo5digitsl.com
  * License:     GPL-2.0-or-later

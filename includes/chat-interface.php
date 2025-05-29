@@ -14,14 +14,16 @@ if ( ! defined( 'WPINC' ) ) {
 	die( esc_html__( 'Silence is golden.', 'echo5-ai-chatbot' ) );
 }
 ?>
-<div id="echo5-chat-container" class="echo5-chat-widget">
-    <div id="echo5-chat-header">
-        <h2><?php esc_html_e('AI Chatbot', 'echo5-ai-chatbot'); ?></h2>
+<div id="echo5-chat-container" class="echo5-chat-widget minimized">    <div id="echo5-chat-header">
+        <h2>Live Chat</h2>
+        <button type="button" id="echo5-minimize-button" aria-label="<?php esc_attr_e('Minimize Chat', 'echo5-ai-chatbot'); ?>">
+            −
+        </button>
     </div>
     
     <div id="echo5-chat-messages"></div>
     
-    <div id="echo5-chat-name-prompt" style="display: none;">
+    <div id="echo5-chat-name-prompt">
         <p><?php esc_html_e('Please enter your name to start chatting', 'echo5-ai-chatbot'); ?></p>
         <input type="text" 
                id="echo5-user-name-input" 
@@ -32,17 +34,16 @@ if ( ! defined( 'WPINC' ) ) {
         </button>
     </div>
 
-    <div id="echo5-chat-input-area">
-        <input type="text" 
-               id="echo5-chat-message-input" 
-               placeholder="<?php esc_attr_e('Type your message...', 'echo5-ai-chatbot'); ?>"
-               autocomplete="off"
-               disabled>
-        <button id="echo5-speech-toggle" class="echo5-speech-button" title="<?php esc_attr_e('Toggle Speech', 'echo5-ai-chatbot'); ?>">
-            <span class="echo5-speech-icon">🔊</span>
-        </button>
-        <button id="echo5-send-message-button" type="button" disabled>
-            <?php esc_html_e('Send', 'echo5-ai-chatbot'); ?>
-        </button>
+    <div id="echo5-chat-controls">
+        <div id="echo5-chat-input-area">
+            <input type="text" 
+                   id="echo5-chat-message-input" 
+                   placeholder="<?php esc_attr_e('Type your message...', 'echo5-ai-chatbot'); ?>"
+                   autocomplete="off"
+                   disabled>
+            <button id="echo5-send-message-button" type="button" disabled>
+                <?php esc_html_e('Send', 'echo5-ai-chatbot'); ?>
+            </button>
+        </div>
     </div>
 </div>
